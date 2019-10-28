@@ -10,6 +10,9 @@ from urllib.error import HTTPError
 from apiclient import errors
 import email
 
+import click
+from email_validator import validate_email, EmailNotValidError
+
 
 # If modifying these scopes, delete the file token.pickle.
 # https://developers.google.com/gmail/api/auth/scopes
@@ -19,7 +22,6 @@ SCOPES = ['https://mail.google.com/']
 class Error(Exception):
     """Base class for exceptions in this module."""
     pass
-
 
 def get_gmail_service():
     current_directory = Path.cwd()
@@ -51,14 +53,10 @@ def get_gmail_service():
     service = build('gmail', 'v1', credentials=creds)
     return service
 
-
-# ListMessagesMatchingQuery
-# fonction récupérée sur :
-# https://developers.google.com/gmail/api/v1/reference/users/messages/list
-# et adaptée à python3
-
 def ListMessagesMatchingQuery(service, user_id, query=''):
     """List all Messages of the user's mailbox matching the query.
+    https://developers.google.com/gmail/api/v1/reference/users/messages/list
+    adapted to python3
 
     Args:
         service: Authorized Gmail API service instance.
@@ -91,22 +89,44 @@ def ListMessagesMatchingQuery(service, user_id, query=''):
 
 def trash_message(service,user_id, msg_id):
     try:
-        #for i in range(len(msg_ids)):
         service.users().messages().trash(userId=user_id, id=msg_id).execute()
         print ("Message with id: ", msg_id," trashed successfully.")
     except errors.HttpError as e:
         print ('An error occurred: ', e)
 
 
+@click.group()
+def main():
+    print("\n\u2728 gmailwrap \u2728\n")
 
-if __name__ == '__main__':
 
-    # récuperation de l'objet service, permettant l'accès à l'API gmail
+@main.command()
+@click.option(
+    '--sent-by', '-s',
+    prompt='emails to thrash, sent by ? ',
+    help='sender of the emails to be trashed'
+)
+def trash(sent_by):
     service = get_gmail_service()
+    try:
+        v = validate_email(sent_by) # validate and get info
+        sent_by = v["email"] # replace with normalized form
+    except EmailNotValidError as e:
+        # email is not valid, exception message is human-readable
+        print('--- you entered: ', sent_by)
+        print('---', str(e))
+        print('--- (exiting gmailwrap.)')
+        import sys; sys.exit()
 
-    # query = 'from:no-reply@dropbox.com'
-    query = 'from:security@mail.instagram.com'
+    query = 'from:' + sent_by
+    print('--- thrashing email sent by : ', sent_by)
+    nb_of_messages = 0
     messages = ListMessagesMatchingQuery(service, 'me', query=query)
-
     for m in messages:
         trash_message(service, 'me', m['id'])
+        nb_of_messages = nb_of_messages + 1
+    print('--- {} messages have been trashed'.format(nb_of_messages))
+
+
+if __name__ == '__main__':
+    main()
