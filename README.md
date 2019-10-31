@@ -22,6 +22,7 @@ and using [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest
 ```
 $ mkvirtualenv -p python3 gmailwrap
 (gmailwrap) $ pip install -r requirements.txt
+(gmailwrap) $ pip install --editable .
 ```
 
 and copy **credential.json** in the cloned directory
