@@ -4,6 +4,7 @@ chardet==3.0.4
 Click==7.0
 dnspython==1.16.0
 email-validator==1.0.5
+-e git+git@github.com:clxmxncx/gmailwrap.git@c9e103c2607cd569c5cadfd0962084b0b711aa7a#egg=gmailwrap
 google-api-python-client==1.7.11
 google-auth==1.6.3
 google-auth-httplib2==0.0.3
